@@ -1,0 +1,49 @@
+services:
+  app:
+    image: python:3.11-slim
+    container_name: smart_tds_v2
+    working_dir: /app
+    env_file: .env
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - ./data:/app/data
+      - ./backups:/app/backups
+      - ./main_v2.py:/app/main_v2.py
+      - ./static:/app/static
+      - ./templates:/app/templates
+      - ./requirements.txt:/app/requirements.txt
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./nginx/conf:/shared_conf
+    environment:
+      - TZ=Asia/Shanghai
+    command: >
+      sh -c "mkdir -p /app/static/vendor && pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple && \
+             uvicorn main_v2:app --host 0.0.0.0 --port 80 --proxy-headers"
+    restart: always
+
+  nginx:
+    image: nginx:1.24-alpine
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
+    depends_on:
+      - app
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/log:/var/log/letsencrypt
+      - ./certbot/lib:/var/lib/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --config-dir /etc/letsencrypt --work-dir /var/lib/letsencrypt --logs-dir /var/log/letsencrypt --server https://acme-v02.api.letsencrypt.org/directory; sleep 12h & wait $${!}; done;'"
