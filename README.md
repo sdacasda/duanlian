@@ -25,13 +25,14 @@
 5. 访问 `/admin` 登录（需预置管理员或邀请码注册）
 
 ### Docker 部署
-**一键脚本**：`bash deploy_docker.sh`  
-作用：生成 `.env`（若不存在）、创建数据目录、启动 `docker-compose_v2.yml`。  
+**一键脚本**：`bash deploy_docker.sh [目标目录]`  
+作用：从 `https://github.com/sdacasda/duanlian.git` 克隆到指定目录（默认 `duanlian`），自动生成 `.env`（若不存在）、创建数据目录、启动 `docker-compose_v2.yml`。  
 
 **手动**：  
-1. 准备 `.env`（可用 `.env.example` 拷贝）  
-2. `docker compose -f docker-compose_v2.yml up -d`  
-3. 默认挂载：`./data:/app/data`，`./backups:/app/backups`，模板/静态 `./templates:/app/templates`、`./static:/app/static`，依赖 `requirements_v2.txt` → 容器内 `requirements.txt`
+1. `git clone https://github.com/sdacasda/duanlian.git && cd duanlian`  
+2. 准备 `.env`（可用 `.env.example` 拷贝）  
+3. `docker compose -f docker-compose_v2.yml up -d`  
+4. 默认挂载：`./data:/app/data`，`./backups:/app/backups`，模板/静态 `./templates:/app/templates`、`./static:/app/static`，依赖 `requirements_v2.txt` → 容器内 `requirements.txt`
 
 ## 2) 环境变量（重点）
 - `SECRET_KEY`：会话签名密钥，必填。  
