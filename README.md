@@ -28,6 +28,22 @@
 **一键脚本**：`bash deploy_docker.sh [目标目录]`  
 作用：从 `https://github.com/sdacasda/duanlian.git` 克隆到指定目录（默认 `duanlian`），自动生成 `.env`（若不存在）、创建数据目录、启动 `docker-compose_v2.yml`。  
 
+**一行命令（直接终端粘贴运行）**：  
+```bash
+DIR=duanlian REPO=https://github.com/sdacasda/duanlian.git bash -c '
+set -euo pipefail
+command -v git >/dev/null || { echo "缺少 git"; exit 1; }
+command -v docker >/dev/null || { echo "缺少 docker 与 docker compose"; exit 1; }
+[ -d "$DIR/.git" ] && git -C "$DIR" pull --ff-only || git clone --depth=1 "$REPO" "$DIR"
+cd "$DIR"
+[ -f .env ] || { [ -f .env.example ] && cp .env.example .env; }
+mkdir -p data backups static templates
+docker compose -f docker-compose_v2.yml up -d
+echo "完成，访问 /admin 登录"
+'
+```
+（如需自定义目录或仓库地址，修改 `DIR`、`REPO` 变量即可。）
+
 **手动**：  
 1. `git clone https://github.com/sdacasda/duanlian.git && cd duanlian`  
 2. 准备 `.env`（可用 `.env.example` 拷贝）  
