@@ -6,6 +6,12 @@
   ```bash
   bash <(curl -sL https://raw.githubusercontent.com/sdacasda/duanlian/main/install_v3.sh)
   ```
+- **安装后全局快捷命令 `d`**  
+  1) 将仓库根目录的 `d` 脚本加入 PATH（示例）：  
+     ```bash
+     sudo ln -sf "$(pwd)/d" /usr/local/bin/d
+     ```  
+  2) 之后任意终端执行 `d` 即可再次拉起 `install_v3.sh`（优先使用本地文件，缺失则远程获取）。
 - **单行克隆 + 启动**  
   ```bash
   DIR=duanlian REPO=https://github.com/sdacasda/duanlian.git bash -c '
