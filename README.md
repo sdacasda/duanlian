@@ -6,11 +6,11 @@
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/sdacasda/duanlian/main/deploy_docker.sh)
 ```
-- 已克隆本仓库的情况下，直接执行：
+- 已克隆本仓库的情况下，直接执行（调用本地安装器，若不存在则远程获取）：
 ```bash
 ./d
 ```
-（脚本会优先使用本地 `deploy_docker.sh`，不存在则自动远程获取后执行。）
+（脚本会优先本地 `install_v3.sh` 菜单，次选 `deploy_docker.sh`，缺失则远程获取安装器。）
 - 全局快捷（可选）：在仓库根目录执行
 ```bash
 sudo ln -sf "$(pwd)/d" /usr/local/bin/d
