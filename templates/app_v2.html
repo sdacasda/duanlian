@@ -501,6 +501,25 @@
         .sk-line { height: 12px; }
         .sk-line.sm { height: 10px; }
         .sk-pill { height: 26px; border-radius: 999px; }
+        .table-skeleton {
+            padding: 12px 16px;
+        }
+        .table-skeleton-row {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr;
+            gap: 12px;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .table-skeleton-row:last-child { border-bottom: none; }
+        .glass-card {
+            background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.78));
+            backdrop-filter: blur(12px);
+        }
+        [data-theme="dark"] .glass-card {
+            background: linear-gradient(180deg, rgba(24,24,27,.86), rgba(24,24,27,.78));
+        }
 
         .advanced-filter-panel {
             background: var(--card-bg);
@@ -1278,15 +1297,15 @@
 
             <!-- 链接列表 -->
             <div v-else-if="currentTab==='links' || currentTab==='all_links'">
-                <div v-if="loadingLinks && !isAutoRefreshing" class="py-3">
-                    <div v-if="viewMode==='grid'" class="row g-3">
-                        <div v-for="n in 6" :key="'skg_'+n" class="col-12 col-md-6 col-xl-4">
-                            <div class="card h-100 border-0 shadow-sm">
-                                <div class="card-body p-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <div class="skeleton sk-line" style="width:68%;"></div>
-                                        <div class="skeleton sk-pill" style="width:56px;"></div>
-                                    </div>
+                    <div v-if="loadingLinks && !isAutoRefreshing" class="py-3">
+                        <div v-if="viewMode==='grid'" class="row g-3">
+                            <div v-for="n in 6" :key="'skg_'+n" class="col-12 col-md-6 col-xl-4">
+                                <div class="card h-100 border-0 shadow-sm glass-card">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="skeleton sk-line" style="width:68%;"></div>
+                                            <div class="skeleton sk-pill" style="width:56px;"></div>
+                                        </div>
                                     <div class="skeleton sk-line sm" style="width:40%;margin-bottom:10px;"></div>
                                     <div class="skeleton" style="height:40px;margin-bottom:12px;"></div>
                                     <div class="d-flex justify-content-between align-items-center pt-2" style="border-top:1px solid var(--border-color)">
@@ -1298,14 +1317,14 @@
                                     </div>
                                 </div>
                             </div>
+                            </div>
                         </div>
-                    </div>
-                    <div v-else class="card border-0 shadow-sm">
-                        <div class="card-body p-3">
-                            <div v-for="n in 6" :key="'skt_'+n" class="d-flex align-items-center justify-content-between" style="padding:10px 4px;border-bottom:1px solid var(--border-color);">
-                                <div class="skeleton sk-line" style="width:55%;"></div>
-                                <div class="d-flex gap-2">
-                                    <div class="skeleton sk-pill" style="width:56px;"></div>
+                        <div v-else class="card border-0 shadow-sm glass-card">
+                            <div class="card-body p-3">
+                                <div v-for="n in 6" :key="'skt_'+n" class="d-flex align-items-center justify-content-between" style="padding:10px 4px;border-bottom:1px solid var(--border-color);">
+                                    <div class="skeleton sk-line" style="width:55%;"></div>
+                                    <div class="d-flex gap-2">
+                                        <div class="skeleton sk-pill" style="width:56px;"></div>
                                     <div class="skeleton sk-pill" style="width:56px;"></div>
                                 </div>
                             </div>
@@ -1690,7 +1709,22 @@
                             <thead><tr><th class="p-3">用户</th><th class="p-3">角色</th><th class="p-3">额度</th><th class="p-3">过期时间</th><th class="p-3">注册时间</th><th class="p-3 text-end">操作</th></tr></thead>
                             <tbody>
                                 <tr v-if="usersLoading">
-                                    <td class="p-0" colspan="6"><div class="ui-state"><div class="spinner-border text-secondary" role="status" style="width:1.6rem;height:1.6rem;"></div><div class="ui-state-title mt-2">加载中...</div></div></td>
+                                    <td class="p-0" colspan="6">
+                                        <div class="table-skeleton">
+                                            <div v-for="n in 3" :key="'usk_'+n" class="table-skeleton-row">
+                                                <div class="skeleton sk-line" style="height:14px;"></div>
+                                                <div class="skeleton sk-pill" style="height:22px;"></div>
+                                                <div class="skeleton sk-line sm" style="width:80%;"></div>
+                                                <div class="skeleton sk-line sm" style="width:70%;"></div>
+                                                <div class="skeleton sk-line sm" style="width:60%;"></div>
+                                                <div class="d-flex justify-content-end gap-2">
+                                                    <div class="skeleton sk-pill" style="width:38px;height:22px;"></div>
+                                                    <div class="skeleton sk-pill" style="width:38px;height:22px;"></div>
+                                                    <div class="skeleton sk-pill" style="width:38px;height:22px;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
                                 </tr>
                                 <tr v-else-if="safeUserList.length===0">
                                     <td class="p-0" colspan="6"><div class="ui-state"><div class="ui-state-icon"><i class="bi bi-people"></i></div><div class="ui-state-title">暂无用户</div><div class="ui-state-desc">目前没有可管理的用户数据。</div></div></td>
@@ -4435,10 +4469,10 @@ const app = createApp({
             const mapData=Object.keys(geoMap).map(code=>({name:__worldNameByCode(code),value:geoMap[code],labelName:countryMap[code]||code}));
             const maxV = Math.max(10, ...Object.values(geoMap).map(v => Number(v || 0) || 0));
             const mapPalette = isDark.value
-                ? ['#0b1220', '#0a3d62', '#1e6091', '#34a0a4', '#52b69a', '#99d98c', '#d9ed92']
-                : ['#eef7ff', '#cfe9ff', '#9fd2ff', '#6ab8ff', '#3b82f6', '#1d4ed8'];
-            const areaColor = isDark.value ? '#1f2937' : '#f3f4f6';
-            const borderColor = isDark.value ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.20)';
+                ? ['#0b1220', '#0a2c4f', '#0ea5e9', '#22d3ee', '#38bdf8', '#7c3aed']
+                : ['#e8f7ff', '#c2e9ff', '#9ad8ff', '#6bc4ff', '#22d3ee', '#7c3aed'];
+            const areaColor = isDark.value ? '#111827' : '#f8fafc';
+            const borderColor = isDark.value ? 'rgba(255,255,255,.16)' : 'rgba(0,0,0,.12)';
             const hoverArea = isDark.value ? '#f59e0b' : '#fbbf24';
             mapChart.setOption({
                 backgroundColor: 'transparent',
@@ -4448,7 +4482,7 @@ const app = createApp({
                     borderColor: isDark.value ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.10)',
                     borderWidth: 1,
                     textStyle: { color: isDark.value ? '#e5e7eb' : '#111827' },
-                    formatter:(p)=>p.data?`${p.data.labelName}: ${p.value} 次`:(p.name?`${p.name}: 0`:'')
+                    formatter:(p)=>p.data?`${p.data.labelName || p.name}: ${p.value || 0} æ¬¡`:(p.name?`${p.name}: 0 æ¬¡`:'')
                 },
                 visualMap:{
                     min:0,
@@ -4464,10 +4498,7 @@ const app = createApp({
                     textStyle:{color:textColor},
                     backgroundColor: 'transparent'
                 },
-                series:[{
-                    type:'map',map:'world',roam:true,zoom:1.2,
-                    scaleLimit: { min: 0.9, max: 6 },
-                    emphasis:{
+                },
                         label:{show:false},
                         itemStyle:{areaColor: hoverArea}
                     },
