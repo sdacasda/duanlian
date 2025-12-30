@@ -44,6 +44,12 @@ echo "完成，访问 /admin 登录"
 ```
 （如需自定义目录或仓库地址，修改 `DIR`、`REPO` 变量即可。）
 
+**远程安装脚本（类似 bash <(curl ...)）**：  
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/sdacasda/duanlian/main/deploy_docker.sh) [目标目录]
+```
+默认目录为 `duanlian`，可在命令末尾指定其他目录。
+
 **手动**：  
 1. `git clone https://github.com/sdacasda/duanlian.git && cd duanlian`  
 2. 准备 `.env`（可用 `.env.example` 拷贝）  
