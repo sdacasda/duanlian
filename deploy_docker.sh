@@ -38,4 +38,12 @@ fi
 echo "启动容器..."
 docker compose -f docker-compose_v2.yml up -d
 
+# 安装全局 d 快捷命令（若有权限）
+if [ -w "/usr/local/bin" ]; then
+  ln -sf "$(pwd)/d" /usr/local/bin/d
+  echo "已安装全局快捷命令: d"
+else
+  echo "提示：/usr/local/bin 无写权限，跳过安装快捷命令 d。可手动运行：sudo ln -sf \"$(pwd)/d\" /usr/local/bin/d"
+fi
+
 echo "完成。请访问服务器 /admin 进行登录。"
