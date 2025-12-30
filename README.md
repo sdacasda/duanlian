@@ -1,16 +1,11 @@
 # Smart TDS Pro
 轻量级多域名流量分发 / 短链平台（FastAPI + SQLite），支持营销跳转、TikTok Pixel/CAPI、邀请制用户体系与可视化管理前端。
 
-## 快速部署（唯一命令）
-- 复制粘贴即可，默认目录 `./duanlian`，并自动把 `d` 安装到 `/usr/local/bin`（有权限时）：
+## 快速部署（唯一命令，交互式菜单）
+- 复制粘贴即可，默认会拉取并执行交互式安装菜单（`install_v3.sh`），有权限会自动把 `d` 安装到 `/usr/local/bin`，以后直接输入 `d` 再次调用菜单：
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/sdacasda/duanlian/main/deploy_docker.sh)
 ```
-- 安装完成后，直接输入：
-```bash
-d
-```
-即可再次一键部署/更新（优先本地脚本，否则远程获取）。
 
 ## 核心功能
 - 多目标分流：轮询、国家/设备过滤、安全落地页。
