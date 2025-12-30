@@ -6,11 +6,16 @@
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/sdacasda/duanlian/main/deploy_docker.sh)
 ```
-- 安装后全局快捷命令（可选）：在仓库根目录执行
+- 已克隆本仓库的情况下，直接执行：
+```bash
+./d
+```
+（脚本会优先使用本地 `deploy_docker.sh`，不存在则自动远程获取后执行。）
+- 全局快捷（可选）：在仓库根目录执行
 ```bash
 sudo ln -sf "$(pwd)/d" /usr/local/bin/d
 ```
-之后任意终端输入 `d` 即可再次一键部署（本地有 `deploy_docker.sh` 则用本地，否则远程获取）。
+之后任意终端输入 `d` 即可再次一键部署。
 
 ## 核心功能
 - 多目标分流：轮询、国家/设备过滤、安全落地页。
