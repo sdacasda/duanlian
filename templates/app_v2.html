@@ -108,9 +108,10 @@
             z-index: 1100;
             left: 0;
             top: 0;
-            transition: transform 0.3s ease;
+            transition: transform 0.24s cubic-bezier(.22,1,.36,1);
             overflow-y: auto;
             box-shadow: var(--shadow-sm);
+            will-change: transform;
         }
 
         [data-theme="dark"] .sidebar {
@@ -299,7 +300,21 @@
         
         .global-loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-body); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column;
+            background:
+                radial-gradient(1200px circle at 12% 8%, rgba(96,165,250,.12), transparent 55%),
+                radial-gradient(900px circle at 88% 18%, rgba(124,58,237,.10), transparent 55%),
+                radial-gradient(900px circle at 50% 95%, rgba(16,185,129,.08), transparent 55%),
+                var(--bg-body);
+            z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column;
+            backdrop-filter: blur(6px);
+            opacity: 1;
+            transition: opacity .25s ease;
+            will-change: opacity;
+        }
+        .global-loader .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            border-width: .35rem;
         }
 
         .btn.btn-primary {
@@ -307,10 +322,11 @@
             border: 0;
             box-shadow: 0 12px 26px rgba(37,99,235,.22);
             border-radius: 14px;
-            transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+            transition: transform .2s cubic-bezier(.22,1,.36,1), filter .2s ease, box-shadow .2s ease;
+            will-change: transform, box-shadow, filter;
         }
         .btn.btn-primary:hover { filter: brightness(1.02); transform: translateY(-1px); box-shadow: 0 16px 34px rgba(37,99,235,.26); }
-        .btn.btn-primary:active { transform: translateY(0px) scale(.99); }
+        .btn.btn-primary:active { transform: translateY(0px) scale(.995); }
 
         .btn.btn-outline-secondary, .btn.btn-outline-danger, .btn.btn-outline-primary {
             border-radius: 12px;
@@ -390,13 +406,13 @@
             }
         }
         .list-enter-active {
-            animation: fadeInUp 0.3s ease-out;
+            animation: fadeInUp 0.32s cubic-bezier(.22,1,.36,1);
         }
         .list-leave-active {
-            animation: fadeOutDown 0.3s ease-out;
+            animation: fadeOutDown 0.26s cubic-bezier(.22,1,.36,1);
         }
         .card.link-item {
-            animation: fadeInUp 0.4s ease-out;
+            animation: fadeInUp 0.32s cubic-bezier(.22,1,.36,1);
             animation-fill-mode: both;
         }
         .card.link-item:nth-child(1) { animation-delay: 0.05s; }
@@ -410,7 +426,7 @@
         }
         .page-transition-enter-active,
         .page-transition-leave-active {
-            transition: opacity 0.2s ease;
+            transition: opacity 0.22s cubic-bezier(.22,1,.36,1);
         }
         .page-transition-enter-from,
         .page-transition-leave-to {
@@ -423,9 +439,10 @@
         }
         .swipe-content {
             position: relative;
-            transition: transform 0.3s ease-out;
+            transition: transform 0.22s cubic-bezier(.22,1,.36,1);
             background: var(--card-bg);
             z-index: 2;
+            will-change: transform;
         }
         .swipe-content.swiping {
             transition: none;
@@ -505,13 +522,18 @@
             border: 1px solid var(--border-color);
             background: var(--hover-bg);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: transform .18s ease, background-color .18s ease, color .18s ease, border-color .18s ease;
+            will-change: transform;
         }
-        .filter-preset-chip:hover { background: var(--brand-primary); color: white; border-color: var(--brand-primary); }
+        .filter-preset-chip:hover { background: var(--brand-primary); color: white; border-color: var(--brand-primary); transform: translateY(-1px); }
         .filter-preset-chip.active { background: var(--brand-primary); color: white; border-color: var(--brand-primary); }
 
         .auth-wrap {
-            background: transparent;
+            background:
+                radial-gradient(1000px circle at 20% 15%, rgba(96,165,250,.14), transparent 55%),
+                radial-gradient(800px circle at 82% 10%, rgba(167,139,250,.12), transparent 55%),
+                radial-gradient(1100px circle at 40% 90%, rgba(34,197,94,.10), transparent 60%),
+                var(--bg-body);
         }
         .auth-card {
             border-radius: var(--radius-md) !important;

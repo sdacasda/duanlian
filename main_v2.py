@@ -56,6 +56,14 @@ try:
     DEEPL_CACHE_TTL = int(os.getenv("DEEPL_CACHE_TTL", "86400") or 86400)
 except Exception:
     DEEPL_CACHE_TTL = 86400
+try:
+    DEEPL_TIMEOUT = int(os.getenv("DEEPL_TIMEOUT", "8") or 8)
+except Exception:
+    DEEPL_TIMEOUT = 8
+try:
+    DEEPL_RETRIES = int(os.getenv("DEEPL_RETRIES", "1") or 1)
+except Exception:
+    DEEPL_RETRIES = 1
 DEEPL_CACHE: "OrderedDict[Tuple[str, str], Tuple[float, str]]" = OrderedDict()
 DEEPL_LOCK = threading.Lock()
 
@@ -63,6 +71,37 @@ QR_CACHE_TTL = 86400
 QR_CACHE_MAX = 2000
 QR_CACHE: "OrderedDict[str, Tuple[float, bytes, str, str]]" = OrderedDict()
 QR_LOCK = threading.Lock()
+
+try:
+    LOGIN_MAX_ATTEMPTS = int(os.getenv("LOGIN_MAX_ATTEMPTS", "5") or 5)
+except Exception:
+    LOGIN_MAX_ATTEMPTS = 5
+try:
+    LOGIN_WINDOW = int(os.getenv("LOGIN_WINDOW", "300") or 300)
+except Exception:
+    LOGIN_WINDOW = 300
+LOGIN_ATTEMPTS: Dict[str, List[float]] = {}
+LOGIN_LOCK = asyncio.Lock()
+
+try:
+    CAPTCHA_MAX_PER_WINDOW = int(os.getenv("CAPTCHA_MAX_PER_WINDOW", "30") or 30)
+except Exception:
+    CAPTCHA_MAX_PER_WINDOW = 30
+try:
+    CAPTCHA_WINDOW = int(os.getenv("CAPTCHA_WINDOW", "300") or 300)
+except Exception:
+    CAPTCHA_WINDOW = 300
+CAPTCHA_REQUESTS: Dict[str, List[float]] = {}
+CAPTCHA_LOCK = asyncio.Lock()
+
+try:
+    TIKTOK_TIMEOUT = int(os.getenv("TIKTOK_TIMEOUT", "10") or 10)
+except Exception:
+    TIKTOK_TIMEOUT = 10
+try:
+    TIKTOK_RETRIES = int(os.getenv("TIKTOK_RETRIES", "2") or 2)
+except Exception:
+    TIKTOK_RETRIES = 2
 
 
 def _deepl_lang_by_country(country: str) -> str:
@@ -139,16 +178,30 @@ def _deepl_translate_text(text: str, target_lang: str) -> str:
     except Exception:
         pass
 
+    def _http_post_with_retry(url: str, data: bytes, headers: Dict[str, str], timeout: int, retries: int) -> str:
+        last_err = None
+        for attempt in range(retries + 1):
+            try:
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    return resp.read().decode("utf-8", errors="ignore")
+            except Exception as e:
+                last_err = e
+                if attempt < retries:
+                    time.sleep(min(2 ** attempt, 3))
+                else:
+                    logger.warning(f"HTTP POST failed after {attempt + 1} attempts: {e}")
+        return ""
+
     try:
         data = urlencode({"auth_key": DEEPL_API_KEY, "text": t, "target_lang": lang}).encode("utf-8")
-        req = urllib.request.Request(
+        raw = _http_post_with_retry(
             DEEPL_API_URL,
             data=data,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
-            method="POST",
+            timeout=DEEPL_TIMEOUT,
+            retries=max(0, DEEPL_RETRIES),
         )
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            raw = resp.read().decode("utf-8", errors="ignore")
         obj = json.loads(raw) if raw else {}
         trans = ""
         if isinstance(obj, dict) and isinstance(obj.get("translations"), list) and obj["translations"]:
@@ -156,7 +209,8 @@ def _deepl_translate_text(text: str, target_lang: str) -> str:
             if isinstance(first, dict):
                 trans = str(first.get("text") or "").strip()
         out = trans or t
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DeepL request failed: {e}")
         out = t
 
     try:
@@ -553,6 +607,11 @@ async def init_db():
         await db.execute(
             "CREATE TABLE IF NOT EXISTS access_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT, link_id INTEGER, ip_hash TEXT, target_url TEXT, country TEXT, os TEXT, referer TEXT, is_new_visitor BOOLEAN, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
         )
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_access_logs_link_id ON access_logs(link_id)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_access_logs_created_at ON access_logs(created_at)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_visitors_ip_hash ON visitors(ip_hash)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_visitors_link_id ON visitors(link_id)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_links_slug_domain ON links(slug, domain_id)")
         await db.commit()
 
 
@@ -664,7 +723,16 @@ async def check_auth(user=Depends(get_current_user)):
 
 
 @app.get("/api/captcha")
-async def api_cap(response: Response):
+async def api_cap(response: Response, request: Request):
+    ip_addr = _get_client_ip(request)
+    now_ts = time.time()
+    async with CAPTCHA_LOCK:
+        arr = [ts for ts in CAPTCHA_REQUESTS.get(ip_addr, []) if now_ts - ts < CAPTCHA_WINDOW]
+        if len(arr) >= CAPTCHA_MAX_PER_WINDOW:
+            return JSONResponse({"error": "请求过于频繁"}, 429)
+        arr.append(now_ts)
+        CAPTCHA_REQUESTS[ip_addr] = arr
+
     n1, n2 = random.randint(1, 10), random.randint(1, 10)
     cap_id = secrets.token_hex(8)
     CAPTCHA_CACHE[cap_id] = str(n1 + n2)
@@ -685,8 +753,20 @@ async def api_cap(response: Response):
 
 @app.post("/api/auth/login")
 async def api_login(data: dict, response: Response, request: Request):
+    ip_addr = _get_client_ip(request)
+    now_ts = time.time()
+    async with LOGIN_LOCK:
+        arr = [ts for ts in LOGIN_ATTEMPTS.get(ip_addr, []) if now_ts - ts < LOGIN_WINDOW]
+        if len(arr) >= LOGIN_MAX_ATTEMPTS:
+            return JSONResponse({"error": "尝试过多，请稍后再试"}, 429)
+        LOGIN_ATTEMPTS[ip_addr] = arr
+
     cid = request.cookies.get("cap_id") or data.get("cap_id") or data.get("capId")
     if not cid or CAPTCHA_CACHE.get(cid) != data.get("captcha"):
+        async with LOGIN_LOCK:
+            arr = [ts for ts in LOGIN_ATTEMPTS.get(ip_addr, []) if now_ts - ts < LOGIN_WINDOW]
+            arr.append(now_ts)
+            LOGIN_ATTEMPTS[ip_addr] = arr
         return JSONResponse({"error": "验证码错误"}, 400)
     try:
         del CAPTCHA_CACHE[cid]
@@ -715,8 +795,14 @@ async def api_login(data: dict, response: Response, request: Request):
             samesite="lax",
             path="/",
         )
+        async with LOGIN_LOCK:
+            LOGIN_ATTEMPTS.pop(ip_addr, None)
         return {"status": "ok", "token": s}
 
+    async with LOGIN_LOCK:
+        arr = [ts for ts in LOGIN_ATTEMPTS.get(ip_addr, []) if now_ts - ts < LOGIN_WINDOW]
+        arr.append(now_ts)
+        LOGIN_ATTEMPTS[ip_addr] = arr
     return JSONResponse({"error": "用户名或密码错误"}, 401)
 
 
@@ -1995,23 +2081,35 @@ def _get_cookie(request: Request, name: str) -> str:
 def _tiktok_api_post(access_token: str, payload: dict) -> dict:
     url = "https://business-api.tiktok.com/open_api/v1.3/event/track/"
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=data,
-        headers={
-            "Content-Type": "application/json",
-            "Access-Token": str(access_token or "").strip(),
-            "User-Agent": "Mozilla/5.0",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            raw = resp.read().decode("utf-8", errors="ignore")
+    headers = {
+        "Content-Type": "application/json",
+        "Access-Token": str(access_token or "").strip(),
+        "User-Agent": "Mozilla/5.0",
+    }
+
+    def _http_post_with_retry(url: str, data: bytes, headers: Dict[str, str], timeout: int, retries: int) -> str:
+        last_err = None
+        for attempt in range(retries + 1):
             try:
-                return json.loads(raw) if raw else {"ok": True}
-            except Exception:
-                return {"ok": True, "raw": raw}
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    return resp.read().decode("utf-8", errors="ignore")
+            except Exception as e:
+                last_err = e
+                if attempt < retries:
+                    time.sleep(min(2 ** attempt, 3))
+                else:
+                    logger.warning(f"TikTok API failed after {attempt + 1} attempts: {e}")
+        return ""
+
+    try:
+        raw = _http_post_with_retry(url, data, headers, timeout=TIKTOK_TIMEOUT, retries=max(0, TIKTOK_RETRIES))
+        if not raw:
+            return {"ok": False, "error": "empty response"}
+        try:
+            return json.loads(raw)
+        except Exception:
+            return {"ok": True, "raw": raw}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
