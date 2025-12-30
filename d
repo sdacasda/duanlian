@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-INSTALL_URL="https://raw.githubusercontent.com/sdacasda/duanlian/main/install_v3.sh"
+DEPLOY_URL="https://raw.githubusercontent.com/sdacasda/duanlian/main/deploy_docker.sh"
 
-if [ -f "install_v3.sh" ]; then
-  exec bash install_v3.sh
+# 优先本地脚本，其次远程一键部署脚本
+if [ -f "deploy_docker.sh" ]; then
+  exec bash deploy_docker.sh
 else
-  exec bash <(curl -sL "$INSTALL_URL")
+  exec bash <(curl -fsSL "$DEPLOY_URL")
 fi
